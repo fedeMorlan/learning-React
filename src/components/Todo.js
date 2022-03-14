@@ -1,11 +1,33 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+
+// usamos un custom hook para tomar el estado previo del elemento
+// para poder hacer focus en un elemento segun la referencia que tenía
+function usePrevious(value){
+  // toma la referencia actual y la guarda en ref
+  const ref = useRef();
+  // cuando cambia la referencia, guarda el value que es boolean
+  useEffect( () => {
+    ref.current = value;
+  });
+  // retorna el boolean en su estado antes de que cambie
+  return ref.current;
+}
 
 export default function Todo(props){
-    // usaremos un boolean para determinar si se está editando o no.
+    // usaremos un boolean para determinar si una tarea se está editando o no.
     const [isEditing, setEditing] = useState(false);
 
-    // usaremos un 
+    // usaremos un newName para editar una tarea
     const [newName, setNewName] = useState('');
+
+    // usando el custom hook, podemos referenciar el elemento que se estaba "isEditing" antes
+    const wasEditing = usePrevious(isEditing);
+
+    // para no perder el focus al presionar "Edit", usar useRef
+    // tienen null hasta que luego se les asigne el objeto específico a ser referenciado.
+    // (usando el atributo ref de esos elementos)
+    const editFieldRef = useRef(null);
+    const editButtonRef = useRef(null);
 
     // para cuando se esté editando el todo
     function handleChange(e) {
@@ -35,6 +57,7 @@ export default function Todo(props){
             type="text"
             value={newName}
             onChange={handleChange}
+            ref={editFieldRef}
           />
         </div>
         <div className="btn-group">
@@ -77,12 +100,27 @@ export default function Todo(props){
               type="button"
               className="btn btn__danger"
               onClick={() => props.deleteTask(props.id)}
+              ref={editButtonRef}
             >
               Delete <span className="visually-hidden">{props.name}</span>
             </button>
           </div>
       </div>
     );
+
+    useEffect(() => {
+      // si se está editando, React lee el valor actual de editFieldRef y le hace focus.
+      if (!wasEditing && isEditing) {
+        editFieldRef.current.focus();
+      }
+      if (wasEditing && !isEditing) {
+        editButtonRef.current.focus();
+      }
+      // como segundo argumento, le pasamos un/unos array, que es una lista de valores de los que 
+      // useEffect() depende: sólo se ejecutará cuando UNO de ESOS valores cambie.
+    }, [isEditing, wasEditing]);
+
+
 
     return (
         <li className="todo"> { isEditing ? editingTemplate : viewTemplate } </li>

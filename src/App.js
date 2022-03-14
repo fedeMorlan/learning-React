@@ -2,8 +2,20 @@ import React from "react";
 import Todo from "./components/Todo";
 import Form from "./components/Form";
 import FilterButton from "./components/FilterButton";
-import { useState } from "react";
+import { useRef, useEffect ,useState } from "react";
 import { nanoid } from "nanoid";
+
+// custom hook para seleccionar un valor en su estado anterior
+// (ver en components/Todo.js más detalle)
+// en este caso el value pasado como arg es la longitud de la lista de tareas
+function usePrevious(value) {
+  const ref = useRef();
+  useEffect(() => {
+    ref.current = value;
+  });
+  return ref.current;
+}
+
 
 /* Nota: definimos objetos constantes fuera de la función App
 porque sino serían recalculados cada vez que se re-renderice el componente */
@@ -98,6 +110,17 @@ function App(props) {
   const tasksNoun = taskList.length !== 1 ? 'tasks' : 'task';
   const headingText = `${taskList.length} ${tasksNoun} remaining`;
 
+  // referencia a heading para cuando se elimine una tarea
+  const listHeadingRef = useRef(null);
+
+  const prevTaskLength = usePrevious(tasks.length)
+
+  useEffect(() => {
+    if (tasks.length - prevTaskLength === -1) {
+      listHeadingRef.current.focus();
+    }
+  }, [tasks.length, prevTaskLength]);
+
   return (
     <div className="todoapp stack-large">
       <h1>TodoMatic</h1>
@@ -106,7 +129,8 @@ function App(props) {
       <div className="filters btn-group stack-exception">
         {filterList}
       </div>
-      <h2 id="list-heading">
+      {/* tabIndex = -1 es para que se le pueda hacer focus sólo con JS (no con teclado) */}
+      <h2 id="list-heading" tabIndex="-1" ref={listHeadingRef}>
         {headingText}
       </h2>
       {/* https://www.scottohara.me/blog/2019/01/12/lists-and-safari.html */}
